@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snap Dragon - Tower Defense Arena</title>
+    <link rel="stylesheet" href="home-style.css" />
+    <link rel="icon" href="images/main wallpaper.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body class="body" onload="charactorCreateStart();">
+
+    <div class="game-wrapper" id="gameWrapper">
+
+        <!-- Top HUD Bar -->
+        <div class="hud-bar" id="d2">
+            <!-- Castle HP Bar -->
+            <div class="hud-section castle-hp-container">
+                <div class="hp-label">🏰 CASTLE HP</div>
+                <div class="hp-bar-wrapper">
+                    <div class="hp-bar-fill" id="castleHpFill" style="width: 100%;"></div>
+                    <span class="hp-text" id="castleHpText">100 / 100</span>
+                </div>
+            </div>
+
+            <!-- Player Name Badge -->
+            <div class="hud-section player-badge-container">
+                <div class="hud-title">PLAYER</div>
+                <div class="hud-value player-name" id="playerBadge">👤 Hero</div>
+            </div>
+
+            <!-- Hero Class Badge -->
+            <div class="hud-section hero-badge-container">
+                <div class="hud-title">HERO CLASS</div>
+                <div class="hud-value hero-class-name" id="heroBadge">🏹 Archer</div>
+            </div>
+
+            <!-- Wave & Enemies -->
+            <div class="hud-section wave-info">
+                <div class="hud-title">WAVE</div>
+                <div class="hud-value cyan" id="d9">1 <span class="wave-max">/ 20</span></div>
+                <div class="sub-value" id="enemiesLeftLabel">Enemies: <span id="enemiesLeftVal">0</span></div>
+            </div>
+
+            <!-- Gold Economy -->
+            <div class="hud-section gold-info">
+                <div class="hud-title">GOLD</div>
+                <div class="hud-value gold" id="goldVal">💰 0</div>
+            </div>
+
+            <!-- Score & Combo -->
+            <div class="hud-section score-info" id="d4">
+                <div class="hud-title">SCORE</div>
+                <div class="hud-value cyan" id="d8">0</div>
+                <div class="combo-badge" id="comboBadge">🔥 0 COMBO</div>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="hud-actions">
+                <button class="hud-btn pause-btn" id="pauseBtn" onclick="togglePauseGame()" title="Pause / Play Game (ESC / Space)">⏸️ PAUSE</button>
+                <button class="hud-btn shop-btn" onclick="openShopModal()" title="Upgrade Shop (P)">🛒 SHOP</button>
+                <div class="sound" onclick="toggleAudio();" title="Toggle Sound"></div>
+                <div class="close" onclick="closeBtn();" title="Exit to Menu"></div>
+            </div>
+        </div>
+
+        <!-- Main Gameplay Arena -->
+        <div class="game-arena background1" id="d3" onclick="handleArenaClick(event)">
+
+            <!-- Boss HP Bar Banner -->
+            <div id="bossHpBanner" class="boss-hp-banner hidden">
+                <div class="boss-name">🐉 DRAGON KING - BOSS</div>
+                <div class="boss-hp-bar">
+                    <div id="bossHpFill" class="boss-hp-fill" style="width: 100%;"></div>
+                    <span id="bossHpText">300 / 300</span>
+                </div>
+            </div>
+
+            <!-- Random Event Announcement Banner -->
+            <div id="eventBanner" class="event-banner hidden">
+                <div id="eventBannerTitle" class="event-banner-title">☄️ METEOR SHOWER</div>
+                <div id="eventBannerSub" class="event-banner-sub">Periodic Meteors Striking Field!</div>
+            </div>
+
+            <!-- Wave Announcement Banner -->
+            <div id="waveBanner" class="wave-banner hidden">
+                <div id="waveBannerText" class="wave-banner-title">WAVE 1</div>
+                <div id="waveBannerSub" class="wave-banner-sub">Defend the Castle!</div>
+            </div>
+
+            <!-- Castle Element -->
+            <div class="d22 castle1" id="d22"></div>
+
+            <!-- Monster Spawning Flow Layer -->
+            <div class="d10" id="d10"></div>
+
+            <!-- Spell & Particle FX Canvas Overlay -->
+            <canvas id="fxCanvas" class="fx-canvas"></canvas>
+
+            <!-- Game Over Screen Modal -->
+            <div class="d11" id="d11">
+                <div class="d17">
+                    <div class="d18"></div>
+                </div>
+                <div class="d19">GAME OVER !!</div>
+                <div class="game-over-stats" id="gameOverStats">
+                    <!-- Stat breakdown inserted via JS -->
+                </div>
+                <div class="d13">
+                    <div class="replay" onclick="menuBtn(); clickSound()" title="Try Again"></div>
+                </div>
+            </div>
+
+            <!-- Victory Screen Modal -->
+            <div class="d14" id="d14">
+                <div class="d15">
+                    <div class="d16"></div>
+                </div>
+                <div class="d12">YOU WIN!!</div>
+                <div class="victory-stats" id="victoryStats">
+                    <!-- Victory stats inserted via JS -->
+                </div>
+                <div class="d13">
+                    <div class="i1" onclick="closeBtn();" title="Main Menu"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Weapon & Spell Bar -->
+        <div class="spell-bar">
+            <button class="spell-card active" data-weapon="arrow" onclick="selectWeapon('arrow')" title="Arrow Attack (Hotkey 1)">
+                <div class="spell-icon">🏹</div>
+                <div class="spell-info">
+                    <div class="spell-name">Arrow</div>
+                    <div class="spell-desc">Fast Click</div>
+                </div>
+                <div class="hotkey-badge">1</div>
+            </button>
+
+            <button class="spell-card" data-weapon="fireball" onclick="castSpell('fireball')" title="Fireball AoE Splash (Hotkey 2)">
+                <div class="spell-icon">🔥</div>
+                <div class="spell-info">
+                    <div class="spell-name">Fireball</div>
+                    <div class="spell-desc">AoE Splash</div>
+                </div>
+                <div class="cooldown-overlay" id="cd_fireball"></div>
+                <div class="hotkey-badge">2</div>
+            </button>
+
+            <button class="spell-card" data-weapon="lightning" onclick="castSpell('lightning')" title="Chain Lightning (Hotkey 3)">
+                <div class="spell-icon">⚡</div>
+                <div class="spell-info">
+                    <div class="spell-name">Lightning</div>
+                    <div class="spell-desc">Chain 3 Targets</div>
+                </div>
+                <div class="cooldown-overlay" id="cd_lightning"></div>
+                <div class="hotkey-badge">3</div>
+            </button>
+
+            <button class="spell-card" data-weapon="ice" onclick="castSpell('ice')" title="Ice Freeze (Hotkey 4)">
+                <div class="spell-icon">❄️</div>
+                <div class="spell-info">
+                    <div class="spell-name">Ice Freeze</div>
+                    <div class="spell-desc">Stun All 4s</div>
+                </div>
+                <div class="cooldown-overlay" id="cd_ice"></div>
+                <div class="hotkey-badge">4</div>
+            </button>
+
+            <button class="spell-card" data-weapon="meteor" onclick="castSpell('meteor')" title="Meteor Strike (Hotkey 5)">
+                <div class="spell-icon">💥</div>
+                <div class="spell-info">
+                    <div class="spell-name">Meteor</div>
+                    <div class="spell-desc">Screen Nuke</div>
+                </div>
+                <div class="cooldown-overlay" id="cd_meteor"></div>
+                <div class="hotkey-badge">5</div>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Pause Modal -->
+    <div id="pauseModal" class="modal-overlay">
+        <div class="modal-card pause-modal-card">
+            <div class="modal-header">
+                <h2>⏸️ GAME PAUSED</h2>
+            </div>
+            <div class="pause-menu-grid">
+                <button class="pause-menu-btn resume-btn" onclick="togglePauseGame()">▶️ RESUME GAME</button>
+                <button class="pause-menu-btn" onclick="openShopModal()">🛒 UPGRADE SHOP</button>
+                <button class="pause-menu-btn" id="pauseAudioBtn" onclick="toggleAudio()">🔊 TOGGLE AUDIO</button>
+                <button class="pause-menu-btn quit-btn" onclick="closeBtn()">🚪 QUIT TO MENU</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roguelite 3-Card Perk Modal -->
+    <div id="perkModal" class="modal-overlay">
+        <div class="modal-card perk-modal-card">
+            <div class="modal-header">
+                <h2>🃏 CHOOSE YOUR POWER</h2>
+            </div>
+            <div class="perk-sub-header">Select 1 Roguelite Perk to Augment Your Hero</div>
+            <div class="perk-cards-grid" id="perkCardsGrid">
+                <!-- 3 Perk Cards populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Upgrade Shop Modal -->
+    <div id="shopModal" class="modal-overlay">
+        <div class="modal-card shop-card">
+            <div class="modal-header">
+                <h2>🛒 Castle & Armory Upgrades</h2>
+                <button class="modal-close-btn" onclick="closeShopModal()">&times;</button>
+            </div>
+            <div class="modal-gold-badge">Available Gold: <span id="shopGoldText" class="gold">💰 0</span></div>
+            <div class="shop-grid">
+                <!-- Repair Castle -->
+                <div class="shop-item">
+                    <div class="shop-item-icon">🛠️</div>
+                    <div class="shop-item-details">
+                        <div class="shop-item-name">Castle Repair</div>
+                        <div class="shop-item-desc">Restores +30 Castle HP</div>
+                    </div>
+                    <button class="buy-btn" id="btnRepair" onclick="buyUpgrade('repair')">💰 50 G</button>
+                </div>
+
+                <!-- Fortify Max HP -->
+                <div class="shop-item">
+                    <div class="shop-item-icon">❤️</div>
+                    <div class="shop-item-details">
+                        <div class="shop-item-name">Fortify Walls</div>
+                        <div class="shop-item-desc">+40 Max Castle HP</div>
+                    </div>
+                    <button class="buy-btn" id="btnMaxHp" onclick="buyUpgrade('maxHp')">💰 100 G</button>
+                </div>
+
+                <!-- Weapon Power -->
+                <div class="shop-item">
+                    <div class="shop-item-icon">⚔️</div>
+                    <div class="shop-item-details">
+                        <div class="shop-item-name">Weapon Damage</div>
+                        <div class="shop-item-desc">+25% All Weapon Damage</div>
+                    </div>
+                    <button class="buy-btn" id="btnDamage" onclick="buyUpgrade('damage')">💰 120 G</button>
+                </div>
+
+                <!-- Cooldown Haste -->
+                <div class="shop-item">
+                    <div class="shop-item-icon">⚡</div>
+                    <div class="shop-item-details">
+                        <div class="shop-item-name">Spell Haste</div>
+                        <div class="shop-item-desc">-15% Cooldown Duration</div>
+                    </div>
+                    <button class="buy-btn" id="btnHaste" onclick="buyUpgrade('haste')">💰 150 G</button>
+                </div>
+
+                <!-- Critical Strike -->
+                <div class="shop-item">
+                    <div class="shop-item-icon">🎯</div>
+                    <div class="shop-item-details">
+                        <div class="shop-item-name">Critical Mastery</div>
+                        <div class="shop-item-desc">+15% Critical Hit Chance (2x Damage)</div>
+                    </div>
+                    <button class="buy-btn" id="btnCrit" onclick="buyUpgrade('crit')">💰 200 G</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snap Dragon - Roguelite Tower Defense</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="images/main wallpaper.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body class="body">
+
+    <div class="d1">
+
+        <div class="header-logo">
+            <div class="i1"></div>
+        </div>
+
+        <div class="d3">
+            <div class="maintext"></div>
+        </div>
+
+        <div class="menu-container">
+
+            <!-- Player Name Selection -->
+            <div class="section-title">ENTER YOUR HERO NAME</div>
+            <div class="name-input-group">
+                <input type="text" id="playerNameInput" class="player-name-input" placeholder="Enter Hero Name..." maxlength="18" autocomplete="off" />
+            </div>
+
+            <!-- Hero Class Selection -->
+            <div class="section-title">SELECT HERO CLASS</div>
+            <div class="class-group">
+                <button class="class-card active" data-class="archer" onclick="selectClass('archer')">
+                    <div class="class-icon">🏹</div>
+                    <div class="class-name">Archer</div>
+                    <div class="class-desc">+25% Crit Chance</div>
+                </button>
+                <button class="class-card" data-class="mage" onclick="selectClass('mage')">
+                    <div class="class-icon">🧙</div>
+                    <div class="class-name">Mage</div>
+                    <div class="class-desc">+30% Spell Dmg</div>
+                </button>
+                <button class="class-card" data-class="warrior" onclick="selectClass('warrior')">
+                    <div class="class-icon">🛡️</div>
+                    <div class="class-name">Warrior</div>
+                    <div class="class-desc">+50 HP & Armor</div>
+                </button>
+                <button class="class-card" data-class="engineer" onclick="selectClass('engineer')">
+                    <div class="class-icon">⚙️</div>
+                    <div class="class-name">Engineer</div>
+                    <div class="class-desc">+40% Gold Gain</div>
+                </button>
+            </div>
+
+            <!-- Difficulty Selection -->
+            <div class="section-title">SELECT DIFFICULTY</div>
+            <div class="difficulty-group">
+                <button class="diff-btn" data-diff="easy" onclick="selectDifficulty('easy')">🟢 Easy</button>
+                <button class="diff-btn active" data-diff="normal" onclick="selectDifficulty('normal')">🟡 Normal</button>
+                <button class="diff-btn" data-diff="hard" onclick="selectDifficulty('hard')">🔴 Hard</button>
+                <button class="diff-btn" data-diff="nightmare" onclick="selectDifficulty('nightmare')">💀 Nightmare</button>
+            </div>
+
+            <!-- Realm Selection -->
+            <div class="section-title">CHOOSE REALM</div>
+            <div class="realm-group">
+                <button class="realm-btn active" data-realm="1" onclick="selectRealm(1)">🌲 Ancient Forest</button>
+                <button class="realm-btn" data-realm="2" onclick="selectRealm(2)">🏜️ Sunken Desert</button>
+                <button class="realm-btn" data-realm="3" onclick="selectRealm(3)">❄️ Frost Citadel</button>
+                <button class="realm-btn" data-realm="4" onclick="selectRealm(4)">🌋 Volcanic Ridge</button>
+                <button class="realm-btn" data-realm="5" onclick="selectRealm(5)">🐉 Dragon's Lair</button>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-bar">
+                <div class="i2" id="i2" onclick="startGame();" title="Start Defending!"></div>
+                <button class="btn-secondary" onclick="openLeaderboardModal()">📊 Leaderboard</button>
+                <button class="btn-secondary" onclick="openAchievementsModal()">🏆 Achievements</button>
+                <button class="btn-secondary" id="musicToggleBtn" onclick="toggleMainMenuMusic()">🔊 Audio: ON</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Achievements Modal -->
+    <div id="achievementsModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>🏆 Realm Achievements</h2>
+                <button class="modal-close-btn" onclick="closeAchievementsModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="achievementsList">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2>📊 Multiplayer High Scores Leaderboard</h2>
+                <button class="modal-close-btn" onclick="closeLeaderboardModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="leaderboardList">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize menu choices
+        let currentDifficulty = 'normal';
+        let currentRealm = 1;
+        let currentClass = 'archer';
+
+        function selectClass(cls) {
+            currentClass = cls;
+            document.querySelectorAll('.class-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.class === cls);
+            });
+            localStorage.setItem('snapdragon_class', cls);
+        }
+
+        function selectDifficulty(diff) {
+            currentDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.diff === diff);
+            });
+            localStorage.setItem('snapdragon_difficulty', diff);
+        }
+
+        function selectRealm(realmId) {
+            currentRealm = realmId;
+            document.querySelectorAll('.realm-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.dataset.realm) === realmId);
+            });
+            localStorage.setItem('snapdragon_realm', realmId);
+        }
+
+        function startGame() {
+            let nameInput = document.getElementById('playerNameInput').value.trim();
+            if (!nameInput) {
+                nameInput = 'Hero_' + Math.floor(1000 + Math.random() * 9000);
+            }
+            localStorage.setItem('snapdragon_player_name', nameInput);
+            localStorage.setItem('snapdragon_difficulty', currentDifficulty);
+            localStorage.setItem('snapdragon_realm', currentRealm);
+            localStorage.setItem('snapdragon_class', currentClass);
+            playBtnMusic();
+            window.location = "home.html";
+        }
+
+        function toggleMainMenuMusic() {
+            const btn = document.getElementById('musicToggleBtn');
+            const isMuted = localStorage.getItem('snapdragon_muted') === 'true';
+            const nextState = !isMuted;
+            localStorage.setItem('snapdragon_muted', nextState);
+            btn.innerHTML = nextState ? '🔇 Audio: OFF' : '🔊 Audio: ON';
+        }
+
+        function openAchievementsModal() {
+            const modal = document.getElementById('achievementsModal');
+            const list = document.getElementById('achievementsList');
+            modal.classList.add('show');
+
+            const achievements = [
+                { id: 'first_blood', name: 'First Blood 🩸', desc: 'Slay your first monster', icon: '⚔️' },
+                { id: 'monster_slayer', name: 'Monster Slayer 👹', desc: 'Defeat 100 monsters', icon: '☠️' },
+                { id: 'dragon_slayer', name: 'Dragon Slayer 🐉', desc: 'Vanquish the Dragon Boss', icon: '👑' },
+                { id: 'perfect_defense', name: 'Impenetrable Wall 🛡️', desc: 'Clear a wave with 100% Castle HP', icon: '🏰' },
+                { id: 'combo_master', name: 'Combo Master 🔥', desc: 'Reach a 15x Hit Combo', icon: '💥' },
+                { id: 'spellslinger', name: 'Spell Slinger ⚡', desc: 'Unleash a Meteor or Ice Frost spell', icon: '🔮' }
+            ];
+
+            const unlocked = JSON.parse(localStorage.getItem('snapdragon_unlocked_achievements') || '[]');
+
+            list.innerHTML = achievements.map(ach => {
+                const isUnlocked = unlocked.includes(ach.id);
+                return `
+                    <div class="achievement-item ${isUnlocked ? 'unlocked' : 'locked'}">
+                        <div class="achievement-icon">${ach.icon}</div>
+                        <div class="achievement-info">
+                            <div class="achievement-name">${ach.name}</div>
+                            <div class="achievement-desc">${ach.desc}</div>
+                        </div>
+                        <div class="achievement-status">${isUnlocked ? '✅ UNLOCKED' : '🔒 LOCKED'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function closeAchievementsModal() {
+            document.getElementById('achievementsModal').classList.remove('show');
+        }
+
+        function openLeaderboardModal() {
+            const modal = document.getElementById('leaderboardModal');
+            const list = document.getElementById('leaderboardList');
+            modal.classList.add('show');
+
+            const savedScores = JSON.parse(localStorage.getItem('snapdragon_high_scores') || '[]');
+            const currentPlayer = localStorage.getItem('snapdragon_player_name') || '';
+
+            if (savedScores.length === 0) {
+                list.innerHTML = `
+                    <div style="text-align:center; padding: 35px 20px; color:#94a3b8;">
+                        <div style="font-size: 36px; margin-bottom: 10px;">🎮</div>
+                        <div style="font-size: 16px; font-weight: 800; color: #f1f5f9;">No Real Game Records Yet!</div>
+                        <div style="font-size: 13px; margin-top: 6px; color: #94a3b8;">Enter your name and play a game to set the first score on the leaderboard!</div>
+                    </div>
+                `;
+            } else {
+                list.innerHTML = savedScores.map((s, idx) => {
+                    const isCurrent = currentPlayer && (s.playerName && s.playerName.toLowerCase() === currentPlayer.toLowerCase());
+                    return `
+                        <div class="leaderboard-item ${isCurrent ? 'current-user-item' : ''}">
+                            <div class="leaderboard-rank">#${idx + 1}</div>
+                            <div class="leaderboard-details">
+                                <div class="leaderboard-title">👤 ${s.playerName || 'Hero'} ${isCurrent ? '<span class="you-tag">(YOU)</span>' : ''}</div>
+                                <div class="leaderboard-sub">${(s.heroClass || 'Archer').toUpperCase()} • Wave ${s.wave || 1} (${(s.difficulty || 'Normal').toUpperCase()}) • ${s.date || 'Today'}</div>
+                            </div>
+                            <div class="leaderboard-score">⭐ ${s.score}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function closeLeaderboardModal() {
+            document.getElementById('leaderboardModal').classList.remove('show');
+        }
+
+        // Load saved options on start
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('snapdragon_player_name') || '';
+            const savedDiff = localStorage.getItem('snapdragon_difficulty') || 'normal';
+            const savedRealm = parseInt(localStorage.getItem('snapdragon_realm') || '1');
+            const savedClass = localStorage.getItem('snapdragon_class') || 'archer';
+            const savedMute = localStorage.getItem('snapdragon_muted') === 'true';
+            
+            if (savedName) {
+                document.getElementById('playerNameInput').value = savedName;
+            }
+            selectDifficulty(savedDiff);
+            selectRealm(savedRealm);
+            selectClass(savedClass);
+            document.getElementById('musicToggleBtn').innerHTML = savedMute ? '🔇 Audio: OFF' : '🔊 Audio: ON';
+        });
+    </script>
+</body>
+
+</html>
