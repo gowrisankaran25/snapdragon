@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: snapdragon
+    env: static
+    buildCommand: ""
+    staticPublishPath: ./
