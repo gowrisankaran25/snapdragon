@@ -883,6 +883,27 @@ function renderLeaderboardUI() {
     }
 }
 
+// --- AUTOMATIC REGULAR LEADERBOARD POLLING & SYNC ENGINE ---
+let leaderboardPollInterval = null;
+
+function startLeaderboardAutoSync() {
+    // 1. Initial fetch & sync on page load / gamer entry
+    fetchOnlineLeaderboard();
+
+    // 2. Regularly poll every 10 seconds to auto-update scores across all active gamers
+    if (!leaderboardPollInterval) {
+        leaderboardPollInterval = setInterval(() => {
+            fetchOnlineLeaderboard();
+        }, 10000);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startLeaderboardAutoSync);
+} else {
+    startLeaderboardAutoSync();
+}
+
 // --- WEAPONS & SPELL ENGINE ---
 function selectWeapon(weaponId) {
     GameState.selectedWeapon = weaponId;

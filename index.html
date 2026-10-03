@@ -212,9 +212,18 @@
             const savedClass = localStorage.getItem('snapdragon_class') || 'archer';
             const savedMute = localStorage.getItem('snapdragon_muted') === 'true';
             
-            if (savedName) {
-                document.getElementById('playerNameInput').value = savedName;
+            const nameInput = document.getElementById('playerNameInput');
+            if (nameInput) {
+                if (savedName) nameInput.value = savedName;
+                nameInput.addEventListener('input', (e) => {
+                    const val = e.target.value.trim();
+                    if (val) {
+                        localStorage.setItem('snapdragon_player_name', val);
+                        if (typeof renderLeaderboardUI === 'function') renderLeaderboardUI();
+                    }
+                });
             }
+
             selectDifficulty(savedDiff);
             selectRealm(savedRealm);
             selectClass(savedClass);
