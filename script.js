@@ -660,10 +660,152 @@ function triggerVictory() {
     unlockAchievement("perfect_defense");
 }
 
+// --- MULTIPLAYER CLOUD LEADERBOARD ENGINE ---
+const LEADERBOARD_API_URL = "https://api.restful-api.dev/objects/ff808181a09d98f701a0ffffe42567f3";
+const LEADERBOARD_STORAGE_KEY = "snapdragon_high_scores";
+
+// Seed default player scores (including prakash and gowri from multiplayer sessions)
+const DEFAULT_SCORES = [
+    {
+        playerName: "prakash",
+        score: 2887,
+        wave: 6,
+        kills: 42,
+        heroClass: "engineer",
+        difficulty: "normal",
+        date: "10/3/2026"
+    },
+    {
+        playerName: "gowri",
+        score: 1561,
+        wave: 5,
+        kills: 28,
+        heroClass: "engineer",
+        difficulty: "normal",
+        date: "10/3/2026"
+    }
+];
+
+// BroadcastChannel & Storage Event listener for real-time cross-tab sync
+let leaderboardChannel = null;
+try {
+    if (typeof BroadcastChannel !== 'undefined') {
+        leaderboardChannel = new BroadcastChannel('snapdragon_leaderboard_channel');
+        leaderboardChannel.onmessage = (event) => {
+            if (event.data === 'update') {
+                renderLeaderboardUI();
+            }
+        };
+    }
+} catch (e) {
+    console.warn("BroadcastChannel not supported", e);
+}
+
+window.addEventListener('storage', (e) => {
+    if (e.key === LEADERBOARD_STORAGE_KEY) {
+        renderLeaderboardUI();
+    }
+});
+
+function getLocalScores() {
+    let scores = [];
+    try {
+        const stored = localStorage.getItem(LEADERBOARD_STORAGE_KEY);
+        if (stored) {
+            scores = JSON.parse(stored);
+        }
+    } catch (e) {
+        console.error("Failed to parse local scores", e);
+    }
+    
+    if (!Array.isArray(scores) || scores.length === 0) {
+        scores = [...DEFAULT_SCORES];
+        localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(scores));
+    }
+    return scores;
+}
+
+function mergeScores(localList, remoteList) {
+    const combined = [...(localList || []), ...(remoteList || [])];
+    const map = new Map();
+
+    combined.forEach(item => {
+        if (!item || !item.playerName || typeof item.score !== 'number') return;
+        
+        const key = item.playerName.trim().toLowerCase();
+        const existing = map.get(key);
+
+        if (!existing || item.score > existing.score) {
+            map.set(key, {
+                playerName: item.playerName.trim(),
+                score: item.score,
+                wave: item.wave || 1,
+                kills: item.kills || 0,
+                heroClass: item.heroClass || "archer",
+                difficulty: item.difficulty || "normal",
+                date: item.date || new Date().toLocaleDateString()
+            });
+        }
+    });
+
+    const result = Array.from(map.values());
+    result.sort((a, b) => b.score - a.score);
+    return result.slice(0, 15);
+}
+
+async function syncLeaderboardOnline(scores) {
+    try {
+        await fetch(LEADERBOARD_API_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: 'SnapDragon Leaderboard',
+                data: { scores: scores }
+            })
+        });
+    } catch (err) {
+        console.warn("Could not sync online scores:", err);
+    }
+}
+
+async function fetchOnlineLeaderboard() {
+    const statusEl = document.getElementById("leaderboardSyncStatus");
+    if (statusEl) statusEl.innerText = "🔄 Syncing...";
+
+    let localScores = getLocalScores();
+
+    try {
+        const response = await fetch(LEADERBOARD_API_URL, { cache: 'no-cache' });
+        if (response.ok) {
+            const json = await response.json();
+            const remoteScores = (json && json.data && Array.isArray(json.data.scores)) ? json.data.scores : [];
+            const merged = mergeScores(localScores, remoteScores);
+            
+            localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(merged));
+            
+            if (merged.length !== remoteScores.length) {
+                syncLeaderboardOnline(merged);
+            }
+
+            if (statusEl) statusEl.innerText = "🌐 Online Synced";
+            renderLeaderboardUI();
+            return merged;
+        }
+    } catch (err) {
+        console.warn("Fetch online scores failed, using cached scores", err);
+    }
+
+    if (statusEl) statusEl.innerText = "💾 Local Cached";
+    renderLeaderboardUI();
+    return localScores;
+}
+
 function saveHighScore() {
-    const playerName = localStorage.getItem("snapdragon_player_name") || "Hero";
-    const scores = JSON.parse(localStorage.getItem("snapdragon_high_scores") || "[]");
-    scores.push({
+    const playerName = (localStorage.getItem("snapdragon_player_name") || "Hero").trim();
+    if (!playerName || GameState.score <= 0) return;
+
+    let localScores = getLocalScores();
+    const newEntry = {
         playerName: playerName,
         score: GameState.score,
         wave: GameState.wave,
@@ -671,9 +813,74 @@ function saveHighScore() {
         heroClass: GameState.heroClass,
         difficulty: GameState.difficulty,
         date: new Date().toLocaleDateString()
-    });
-    scores.sort((a, b) => b.score - a.score);
-    localStorage.setItem("snapdragon_high_scores", JSON.stringify(scores.slice(0, 10)));
+    };
+
+    const merged = mergeScores(localScores, [newEntry]);
+    localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(merged));
+
+    if (leaderboardChannel) {
+        leaderboardChannel.postMessage('update');
+    }
+
+    syncLeaderboardOnline(merged);
+}
+
+function openLeaderboardModal() {
+    const modal = document.getElementById('leaderboardModal');
+    if (!modal) return;
+    modal.classList.add('show');
+
+    renderLeaderboardUI();
+    fetchOnlineLeaderboard();
+}
+
+function closeLeaderboardModal() {
+    const modal = document.getElementById('leaderboardModal');
+    if (modal) modal.classList.remove('show');
+}
+
+function refreshLeaderboardOnline() {
+    const statusEl = document.getElementById("leaderboardSyncStatus");
+    if (statusEl) statusEl.innerText = "🔄 Syncing...";
+    fetchOnlineLeaderboard();
+}
+
+function renderLeaderboardUI() {
+    const list = document.getElementById('leaderboardList');
+    if (!list) return;
+
+    const savedScores = getLocalScores();
+    const currentPlayer = (localStorage.getItem('snapdragon_player_name') || '').trim().toLowerCase();
+
+    if (savedScores.length === 0) {
+        list.innerHTML = `
+            <div style="text-align:center; padding: 35px 20px; color:#94a3b8;">
+                <div style="font-size: 36px; margin-bottom: 10px;">🎮</div>
+                <div style="font-size: 16px; font-weight: 800; color: #f1f5f9;">No Real Game Records Yet!</div>
+                <div style="font-size: 13px; margin-top: 6px; color: #94a3b8;">Enter your name and play a game to set the first score on the leaderboard!</div>
+            </div>
+        `;
+    } else {
+        list.innerHTML = savedScores.map((s, idx) => {
+            const isCurrent = currentPlayer && (s.playerName && s.playerName.trim().toLowerCase() === currentPlayer);
+            
+            let rankBadge = `#${idx + 1}`;
+            if (idx === 0) rankBadge = "🥇 #1";
+            else if (idx === 1) rankBadge = "🥈 #2";
+            else if (idx === 2) rankBadge = "🥉 #3";
+
+            return `
+                <div class="leaderboard-item ${isCurrent ? 'current-user-item' : ''}">
+                    <div class="leaderboard-rank">${rankBadge}</div>
+                    <div class="leaderboard-details">
+                        <div class="leaderboard-title">👤 ${s.playerName || 'Hero'} ${isCurrent ? '<span class="you-tag">(YOU)</span>' : ''}</div>
+                        <div class="leaderboard-sub">${(s.heroClass || 'Archer').toUpperCase()} • Wave ${s.wave || 1} (${(s.difficulty || 'Normal').toUpperCase()}) • ${s.date || 'Today'}</div>
+                    </div>
+                    <div class="leaderboard-score">⭐ ${s.score}</div>
+                </div>
+            `;
+        }).join('');
+    }
 }
 
 // --- WEAPONS & SPELL ENGINE ---

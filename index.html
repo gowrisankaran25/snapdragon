@@ -102,8 +102,14 @@
     <div id="leaderboardModal" class="modal-overlay">
         <div class="modal-card">
             <div class="modal-header">
-                <h2>📊 Multiplayer High Scores Leaderboard</h2>
-                <button class="modal-close-btn" onclick="closeLeaderboardModal()">&times;</button>
+                <div class="modal-title-group">
+                    <h2>📊 Multiplayer High Scores Leaderboard</h2>
+                    <span id="leaderboardSyncStatus" class="sync-status-badge">🌐 Live Online</span>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-refresh" onclick="refreshLeaderboardOnline()" title="Sync online scores">🔄 Refresh</button>
+                    <button class="modal-close-btn" onclick="closeLeaderboardModal()">&times;</button>
+                </div>
             </div>
             <div class="modal-body" id="leaderboardList">
                 <!-- Dynamically populated -->
@@ -196,43 +202,6 @@
 
         function closeAchievementsModal() {
             document.getElementById('achievementsModal').classList.remove('show');
-        }
-
-        function openLeaderboardModal() {
-            const modal = document.getElementById('leaderboardModal');
-            const list = document.getElementById('leaderboardList');
-            modal.classList.add('show');
-
-            const savedScores = JSON.parse(localStorage.getItem('snapdragon_high_scores') || '[]');
-            const currentPlayer = localStorage.getItem('snapdragon_player_name') || '';
-
-            if (savedScores.length === 0) {
-                list.innerHTML = `
-                    <div style="text-align:center; padding: 35px 20px; color:#94a3b8;">
-                        <div style="font-size: 36px; margin-bottom: 10px;">🎮</div>
-                        <div style="font-size: 16px; font-weight: 800; color: #f1f5f9;">No Real Game Records Yet!</div>
-                        <div style="font-size: 13px; margin-top: 6px; color: #94a3b8;">Enter your name and play a game to set the first score on the leaderboard!</div>
-                    </div>
-                `;
-            } else {
-                list.innerHTML = savedScores.map((s, idx) => {
-                    const isCurrent = currentPlayer && (s.playerName && s.playerName.toLowerCase() === currentPlayer.toLowerCase());
-                    return `
-                        <div class="leaderboard-item ${isCurrent ? 'current-user-item' : ''}">
-                            <div class="leaderboard-rank">#${idx + 1}</div>
-                            <div class="leaderboard-details">
-                                <div class="leaderboard-title">👤 ${s.playerName || 'Hero'} ${isCurrent ? '<span class="you-tag">(YOU)</span>' : ''}</div>
-                                <div class="leaderboard-sub">${(s.heroClass || 'Archer').toUpperCase()} • Wave ${s.wave || 1} (${(s.difficulty || 'Normal').toUpperCase()}) • ${s.date || 'Today'}</div>
-                            </div>
-                            <div class="leaderboard-score">⭐ ${s.score}</div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        function closeLeaderboardModal() {
-            document.getElementById('leaderboardModal').classList.remove('show');
         }
 
         // Load saved options on start
